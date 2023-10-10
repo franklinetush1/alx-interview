@@ -3,17 +3,18 @@
 
 
 def canUnlockAll(boxes):
-    """"Method that determines if all the boxes can be opened"""
+    """
+     a method that determines if all the boxes can be opened.
+    :return: True or False
+    """
     n = len(boxes)
-    visited = [False] * n
-    stack = [0]
-
-    while stack:
-        current_box = stack.pop()
-        visited[current_box] = True
-
-        for key in boxes[current_box]:
-            if not visited[key]:
-                stack.append(key)
-
-    return all(visited)
+    open_boxes = set([0])
+    unopen_boxes = set(boxes[0]).difference(set([0]))
+    while len(unopen_boxes) > 0:
+        boxIdx = unopen_boxes.pop()
+        if not boxIdx or boxIdx >= n or boxIdx < 0:
+            continue
+        if boxIdx not in open_boxes:
+            unopen_boxes = unopen_boxes.union(boxes[boxIdx])
+            open_boxes.add(boxIdx)
+    return n == len(open_boxes)
