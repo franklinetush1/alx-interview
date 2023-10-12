@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """Determines minimum operations"""
 
+
 def minOperations(n):
   """Determines minimum operations"""
     if n < 2:
@@ -19,10 +20,3 @@ def minOperations(n):
         operations += 1
 
     return operations
-
-if __name__ == "__main__":
-    n = 4
-    print("Min number of operations to reach {} characters: {}".format(n, minOperations(n)))
-
-    n = 12
-    print("Min number of operations to reach {} characters: {}".format(n, minOperations(n)))
