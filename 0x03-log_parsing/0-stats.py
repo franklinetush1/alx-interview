@@ -1,51 +1,54 @@
 #!/usr/bin/python3
+
 import sys
-import signal
 
-# Initialize variables to keep track of metrics
+
+def print_msg(dict_sc, total_file_size):
+    """
+    Method to print
+    Args:
+        dict_sc: dict of status codes
+        total_file_size: total of the file
+    Returns:
+        Nothing
+    """
+
+    print("File size: {}".format(total_file_size))
+    for key, val in sorted(dict_sc.items()):
+        if val != 0:
+            print("{}: {}".format(key, val))
+
+
 total_file_size = 0
-status_code_count = {200: 0, 301: 0, 400: 0, 401: 0, 403: 0, 404: 0, 405: 0, 500: 0}
-line_count = 0
+code = 0
+counter = 0
+dict_sc = {"200": 0,
+           "301": 0,
+           "400": 0,
+           "401": 0,
+           "403": 0,
+           "404": 0,
+           "405": 0,
+           "500": 0}
 
-# Function to print statistics
-def print_statistics():
-    print("File size:", total_file_size)
-    for code in sorted(status_code_count.keys()):
-        if status_code_count[code] > 0:
-            print(f"{code}: {status_code_count[code]}")
+try:
+    for line in sys.stdin:
+        parsed_line = line.split()  # ✄ trimming
+        parsed_line = parsed_line[::-1]  # inverting
 
-# Function to handle Ctrl+C
-def signal_handler(signal, frame):
-    print_statistics()
-    sys.exit(0)
+        if len(parsed_line) > 2:
+            counter += 1
 
-# Register the Ctrl+C signal handler
-signal.signal(signal.SIGINT, signal_handler)
+            if counter <= 10:
+                total_file_size += int(parsed_line[0])  # file size
+                code = parsed_line[1]  # status code
 
-# Process input line by line
-for line in sys.stdin:
-    try:
-        parts = line.split()
-        if len(parts) != 8:
-            continue
+                if (code in dict_sc.keys()):
+                    dict_sc[code] += 1
 
-        ip, _, _, _, status_code, file_size = parts[0], parts[3], parts[6], parts[5], parts[7]
-        status_code = int(status_code)
-        file_size = int(file_size)
+            if (counter == 10):
+                print_msg(dict_sc, total_file_size)
+                counter = 0
 
-        # Update metrics
-        total_file_size += file_size
-        if status_code in status_code_count:
-            status_code_count[status_code] += 1
-        line_count += 1
-
-        # Print statistics every 10 lines
-        if line_count % 10 == 0:
-            print_statistics()
-
-    except (ValueError, IndexError):
-        # Ignore lines that don't match the expected format
-        continue
-
-# Print the final statistics
-print_statistics()
+finally:
+    print_msg(dict_sc, total_file_size)
