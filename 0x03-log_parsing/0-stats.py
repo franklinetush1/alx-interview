@@ -1,39 +1,51 @@
 #!/usr/bin/python3
-"""
-Log parsing
-"""
-
 import sys
+import signal
 
-if __name__ == '__main__':
+# Initialize variables to keep track of metrics
+total_file_size = 0
+status_code_count = {200: 0, 301: 0, 400: 0, 401: 0, 403: 0, 404: 0, 405: 0, 500: 0}
+line_count = 0
 
-    filesize, count = 0, 0
-    codes = ["200", "301", "400", "401", "403", "404", "405", "500"]
-    stats = {k: 0 for k in codes}
+# Function to print statistics
+def print_statistics():
+    print("File size:", total_file_size)
+    for code in sorted(status_code_count.keys()):
+        if status_code_count[code] > 0:
+            print(f"{code}: {status_code_count[code]}")
 
-    def print_stats(stats: dict, file_size: int) -> None:
-        print("File size: {:d}".format(filesize))
-        for k, v in sorted(stats.items()):
-            if v:
-                print("{}: {}".format(k, v))
+# Function to handle Ctrl+C
+def signal_handler(signal, frame):
+    print_statistics()
+    sys.exit(0)
 
+# Register the Ctrl+C signal handler
+signal.signal(signal.SIGINT, signal_handler)
+
+# Process input line by line
+for line in sys.stdin:
     try:
-        for line in sys.stdin:
-            count += 1
-            data = line.split()
-            try:
-                status_code = data[-2]
-                if status_code in stats:
-                    stats[status_code] += 1
-            except BaseException:
-                pass
-            try:
-                filesize += int(data[-1])
-            except BaseException:
-                pass
-            if count % 10 == 0:
-                print_stats(stats, filesize)
-        print_stats(stats, filesize)
-    except KeyboardInterrupt:
-        print_stats(stats, filesize)
-        raise
+        parts = line.split()
+        if len(parts) != 8:
+            continue
+
+        ip, _, _, _, status_code, file_size = parts[0], parts[3], parts[6], parts[5], parts[7]
+        status_code = int(status_code)
+        file_size = int(file_size)
+
+        # Update metrics
+        total_file_size += file_size
+        if status_code in status_code_count:
+            status_code_count[status_code] += 1
+        line_count += 1
+
+        # Print statistics every 10 lines
+        if line_count % 10 == 0:
+            print_statistics()
+
+    except (ValueError, IndexError):
+        # Ignore lines that don't match the expected format
+        continue
+
+# Print the final statistics
+print_statistics()
