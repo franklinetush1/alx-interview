@@ -1,52 +1,61 @@
 #!/usr/bin/python3
-
 import sys
+import signal
 
-
-def print_msg(dict_sc, total_file_size):
-    """
-    Method to print
-    Args:
-        dict_sc: dict of status codes
-        total_file_size: total of the file
-    Returns:
-        Nothing
-    """
-
-    print("File size: {}".format(total_file_size))
-    for key, val in sorted(dict_sc.items()):
-        if val != 0:
-            print("{}: {}".format(key, val))
-
-
+# Initialize variables to keep track of metrics
 total_file_size = 0
-counter = 0
-dict_sc = {"200": 0,
-           "301": 0,
-           "400": 0,
-           "401": 0,
-           "403": 0,
-           "404": 0,
-           "405": 0,
-           "500": 0}
+status_code_count = {200: 0, 301: 0, 400: 0, 401: 0, 403: 0, 404: 0, 405: 0, 500: 0}
+line_count = 0
 
-try:
-    for line in sys.stdin:
-        parsed_line = line.split()
+# Function to print statistics
+def print_statistics():
+    """
+    Method to print the file size and status code counts.
+    Args:
+        dict_sc: Dictionary with status codes as keys and their counts as values.
+        total_file_size: The total file size.
+    """
+    print("File size: ", total_file_size)
+    for code in sorted(status_code_count.keys()):
+        if status_code_count[code] > 0:
+            print(f"{code}: {status_code_count[code]}")
 
-        if len(parsed_line) == 8:  # Ensure the line matches the expected format
-            counter += 1
-            status_code = parsed_line[-2]  # Status code is the second last element
-            file_size = int(parsed_line[-1])
+# Function to handle Ctrl+C
+def signal_handler(signal, frame):
+    """
+    Signal handler for Ctrl+C. It prints the statistics and exits.
+    Args:
+        signal: The signal being handled.
+        frame: The current stack frame.
+    """
+    print_statistics()
+    sys.exit(0)
+
+# Register the Ctrl+C signal handler
+signal.signal(signal.SIGINT, signal_handler)
+
+# Process input line by line
+for line in sys.stdin:
+    try:
+        parts = line.split()
+        if len(parts) == 7:
+            ip, _, _, _, status_code, file_size = parts[0], parts[5], parts[6]
+            status_code = int(status_code)
+            file_size = int(file_size)
 
             # Update metrics
             total_file_size += file_size
-            if status_code in dict_sc:
-                dict_sc[status_code] += 1
+            if status_code in status_code_count:
+                status_code_count[status_code] += 1
+            line_count += 1
 
-            if counter == 10:
-                print_msg(dict_sc, total_file_size)
-                counter = 0
+            # Print statistics every 10 lines
+            if line_count % 10 == 0:
+                print_statistics()
 
-finally:
-    print_msg(dict_sc, total_file_size)
+    except (ValueError, IndexError):
+        # Ignore lines that don't match the expected format
+        continue
+
+# Print the final statistics
+print_statistics()
