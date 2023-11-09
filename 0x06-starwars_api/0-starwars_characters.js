@@ -1,20 +1,28 @@
 #!/usr/bin/node
-const util = require('util');
-const request = util.promisify(require('request'));
-const filmID = process.argv[2];
+import requests
+import sys
 
-async function starwarsCharacters (filmId) {
-  const endpoint = 'https://swapi-api.hbtn.io/api/films/' + filmId;
-  let response = await (await request(endpoint)).body;
-  response = JSON.parse(response);
-  const characters = response.characters;
+def get_movie_characters(movie_id):
+    url = f"https://swapi.dev/api/films/{movie_id}/"
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        film_data = response.json()
+        characters = film_data['characters']
+        
+        for character_url in characters:
+            character_response = requests.get(character_url)
+            if character_response.status_code == 200:
+                character_data = character_response.json()
+                print(character_data['name'])
+            else:
+                print(f"Failed to fetch character data: {character_response.status_code}")
+    else:
+        print(f"Failed to fetch film data: {response.status_code}")
 
-  for (let i = 0; i < characters.length; i++) {
-    const urlCharacter = characters[i];
-    let character = await (await request(urlCharacter)).body;
-    character = JSON.parse(character);
-    console.log(character.name);
-  }
-}
-
-starwarsCharacters(filmID);
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python script.py <movie_id>")
+    else:
+        movie_id = sys.argv[1]
+        get_movie_characters(movie_id)
